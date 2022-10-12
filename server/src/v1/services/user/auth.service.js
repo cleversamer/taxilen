@@ -5,7 +5,7 @@ const httpStatus = require("http-status");
 const errors = require("../../config/errors");
 const usersService = require("./users.service");
 
-module.exports.registerWithEmail = async (email, password, name) => {
+module.exports.register = async (email, password, name, phone) => {
   try {
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(password, salt);
@@ -14,9 +14,10 @@ module.exports.registerWithEmail = async (email, password, name) => {
       name,
       email,
       password: hashed,
+      phone,
     });
 
-    user.updateEmailVerificationCode();
+    user.updatePhoneVerificationCode();
 
     return await user.save();
   } catch (err) {
@@ -24,9 +25,9 @@ module.exports.registerWithEmail = async (email, password, name) => {
   }
 };
 
-module.exports.signInWithEmail = async (email, password) => {
+module.exports.login = async (email, password) => {
   try {
-    const user = await usersService.findUserByEmail(email);
+    const user = await usersService.findUserByEmailOrPhone(email);
 
     if (!user) {
       const statusCode = httpStatus.NOT_FOUND;

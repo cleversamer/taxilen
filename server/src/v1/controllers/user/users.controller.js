@@ -22,7 +22,7 @@ module.exports.verifyUserEmail = async (req, res, next) => {
 
     if (user.verified.email) {
       const statusCode = httpStatus.BAD_REQUEST;
-      const message = errors.user.alreadyVerified;
+      const message = errors.user.emailAlreadyVerified;
       throw new ApiError(statusCode, message);
     }
 
@@ -57,13 +57,55 @@ module.exports.verifyUserEmail = async (req, res, next) => {
   }
 };
 
+module.exports.verifyUserPhone = async (req, res, next) => {
+  try {
+    const user = req.user;
+    const { code } = req.body;
+
+    if (user.verified.phone) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.user.phoneAlreadyVerified;
+      throw new ApiError(statusCode, message);
+    }
+
+    if ((!code && code != 0) || code.toString().length !== 4) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.auth.invalidCode;
+      throw new ApiError(statusCode, message);
+    }
+
+    if (user.phoneVerificationCode.code == code) {
+      const diff = new Date() - new Date(user.phoneVerificationCode.expiresAt);
+      const activeCode = diff < 10 * 60 * 1000;
+      if (!activeCode) {
+        const statusCode = httpStatus.BAD_REQUEST;
+        const message = errors.auth.expiredCode;
+        throw new ApiError(statusCode, message);
+      }
+
+      user.verifyPhone();
+      const verifiedUser = await user.save();
+
+      return res
+        .status(httpStatus.OK)
+        .json(_.pick(verifiedUser, CLIENT_SCHEMA));
+    }
+
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.incorrectCode;
+    throw new ApiError(statusCode, message);
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports.resendEmailVerificationCode = async (req, res, next) => {
   try {
     const user = req.user;
 
     if (user.verified.email) {
       const statusCode = httpStatus.BAD_REQUEST;
-      const message = errors.user.alreadyVerified;
+      const message = errors.user.emailAlreadyVerified;
       throw new ApiError(statusCode, message);
     }
 
@@ -71,6 +113,29 @@ module.exports.resendEmailVerificationCode = async (req, res, next) => {
     await user.save();
 
     await emailService.registerEmail(user.email, user);
+
+    res
+      .status(httpStatus.OK)
+      .json({ ok: true, message: success.auth.emailVerificationCodeSent });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports.resendPhoneVerificationCode = async (req, res, next) => {
+  try {
+    const user = req.user;
+
+    if (user.verified.phone) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.user.phoneAlreadyVerified;
+      throw new ApiError(statusCode, message);
+    }
+
+    user.updatePhoneVerificationCode();
+    await user.save();
+
+    // TODO: send phone activation code to user's phone
 
     res
       .status(httpStatus.OK)
@@ -98,8 +163,8 @@ module.exports.resetPassword = async (req, res, next) => {
 
 module.exports.sendForgotPasswordCode = async (req, res, next) => {
   try {
-    const { email } = req.query;
-    const user = await usersService.findUserByEmail(email);
+    const { emailOrPhone, sendTo } = req.query;
+    const user = await usersService.findUserByEmailOrPhone(emailOrPhone);
 
     if (!user) {
       const statusCode = httpStatus.NOT_FOUND;
@@ -110,11 +175,21 @@ module.exports.sendForgotPasswordCode = async (req, res, next) => {
     user.generatePasswordResetCode();
     const updatedUser = await user.save();
 
-    await emailService.forgotPasswordEmail(email, updatedUser);
+    if (sendTo === "phone") {
+      // TODO: send forgot password code to user's phone.
+    } else {
+      await emailService.forgotPasswordEmail(user.email, updatedUser);
+    }
 
-    res
-      .status(httpStatus.OK)
-      .json({ ok: true, message: success.auth.passwordResetCodeSent });
+    const body = {
+      ok: true,
+      message:
+        sendTo === "phone"
+          ? success.auth.passwordResetCodeSentToPhone
+          : success.auth.passwordResetCodeSentToEmail,
+    };
+
+    res.status(httpStatus.OK).json(body);
   } catch (err) {
     next(err);
   }
@@ -122,8 +197,8 @@ module.exports.sendForgotPasswordCode = async (req, res, next) => {
 
 module.exports.handleForgotPassword = async (req, res, next) => {
   try {
-    const { email, code, newPassword } = req.body;
-    const user = await usersService.findUserByEmail(email);
+    const { emailOrPhone, code, newPassword } = req.body;
+    const user = await usersService.findUserByEmailOrPhone(emailOrPhone);
 
     if (!user) {
       const statusCode = httpStatus.NOT_FOUND;
@@ -165,13 +240,16 @@ module.exports.handleForgotPassword = async (req, res, next) => {
 module.exports.updateProfile = async (req, res, next) => {
   try {
     const user = req.user;
-    const { name, email, password } = req.body;
+    const { name, email, phone, password } = req.body;
+    const avatar = req?.files?.avatar || null;
 
     const newUser = await usersService.updateProfile(
       user,
       name,
       email,
-      password
+      password,
+      phone,
+      avatar
     );
 
     const body = {
@@ -188,13 +266,15 @@ module.exports.updateProfile = async (req, res, next) => {
 ///////////////////////////// ADMIN /////////////////////////////
 module.exports.updateUserProfile = async (req, res, next) => {
   try {
-    const { userId, name, email, password } = req.body;
+    const { emailOrPhone, name, email, password } = req.body;
+    const avatar = req?.files?.avatar || null;
 
     const updatedUser = await usersService.updateUserProfile(
-      userId,
+      emailOrPhone,
       name,
       email,
-      password
+      password,
+      avatar
     );
 
     res.status(httpStatus.CREATED).json(_.pick(updatedUser, CLIENT_SCHEMA));
@@ -203,11 +283,11 @@ module.exports.updateUserProfile = async (req, res, next) => {
   }
 };
 
-module.exports.validateUser = async (req, res, next) => {
+module.exports.verifyUser = async (req, res, next) => {
   try {
-    const { userId } = req.body;
+    const { emailOrPhone } = req.body;
 
-    const updatedUser = await usersService.validateUser(userId);
+    const updatedUser = await usersService.verifyUser(emailOrPhone);
 
     res.status(httpStatus.CREATED).json(_.pick(updatedUser, CLIENT_SCHEMA));
   } catch (err) {
@@ -217,9 +297,9 @@ module.exports.validateUser = async (req, res, next) => {
 
 module.exports.changeUserRole = async (req, res, next) => {
   try {
-    const { userId, role } = req.body;
+    const { emailOrPhone, role } = req.body;
 
-    const updatedUser = await usersService.changeUserRole(userId, role);
+    const updatedUser = await usersService.changeUserRole(emailOrPhone, role);
 
     res.status(httpStatus.CREATED).json(_.pick(updatedUser, CLIENT_SCHEMA));
   } catch (err) {
@@ -227,14 +307,15 @@ module.exports.changeUserRole = async (req, res, next) => {
   }
 };
 
-module.exports.findUserByEmail = async (req, res, next) => {
+module.exports.findUserByEmailOrPhone = async (req, res, next) => {
   try {
-    // This is come from `req.params` but added to `req.body`
-    // in the validation middleware.
-    // GET Requests don't accept body data.
-    const { email } = req.body;
+    const { role, id: emailOrPhone } = req.params;
 
-    const user = await usersService.findUserByEmail(email, true);
+    const user = await usersService.findUserByEmailOrPhone(
+      emailOrPhone,
+      role,
+      true
+    );
 
     res.status(httpStatus.OK).json(_.pick(user, CLIENT_SCHEMA));
   } catch (err) {

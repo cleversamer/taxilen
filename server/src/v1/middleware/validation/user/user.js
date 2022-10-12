@@ -12,10 +12,14 @@ const validateUpdateProfile = [
       .withMessage(errors.auth.invalidName)
   ),
 
+  commonMiddleware.checkFile("avatar", ["png", "jpg", "jpeg"], false),
+
   commonMiddleware.conditionalCheck(
     "email",
     check("email").trim().isEmail().withMessage(errors.auth.invalidEmail).bail()
   ),
+
+  commonMiddleware.conditionalCheck("phone", commonMiddleware.checkPhone),
 
   commonMiddleware.conditionalCheck(
     "password",
@@ -29,13 +33,21 @@ const validateUpdateProfile = [
 ];
 
 const validateUpdateUserProfile = [
-  check("userId").isMongoId().withMessage(errors.user.invalidId),
+  check("emailOrPhone")
+    .trim()
+    .isLength({ min: 8, max: 256 })
+    .withMessage(errors.auth.invalidEmailOrPhone)
+    .bail(),
 
   ...validateUpdateProfile,
 ];
 
 const validateUpdateUserRole = [
-  check("userId").isMongoId().withMessage(errors.user.invalidId),
+  check("emailOrPhone")
+    .trim()
+    .isLength({ min: 8, max: 256 })
+    .withMessage(errors.auth.invalidEmailOrPhone)
+    .bail(),
 
   check("role").isIn(SUPPORTED_ROLES).withMessage(errors.user.invalidRole),
 
@@ -43,19 +55,32 @@ const validateUpdateUserRole = [
 ];
 
 const validateVerifyUser = [
-  check("userId").isMongoId().withMessage(errors.user.invalidId),
+  check("emailOrPhone")
+    .trim()
+    .isLength({ min: 8, max: 256 })
+    .withMessage(errors.auth.invalidEmailOrPhone)
+    .bail(),
 
   commonMiddleware.next,
 ];
 
-const validateFindUserByEmail = [
+const validateFindUserByEmailOrPhone = [
   (req, res, next) => {
-    req.body.email = req.params.id;
+    req.body.emailOrPhone = req.params.id;
+    req.body.role = req.params.role;
 
     next();
   },
 
-  check("email").trim().isEmail().withMessage(errors.auth.invalidEmail).bail(),
+  check("emailOrPhone")
+    .trim()
+    .isLength({ min: 8, max: 256 })
+    .withMessage(errors.auth.invalidEmailOrPhone)
+    .bail(),
+
+  check("role")
+    .isIn(SUPPORTED_ROLES.filter((role) => role !== "admin"))
+    .withMessage(errors.user.invalidRole),
 
   commonMiddleware.next,
 ];
@@ -65,5 +90,5 @@ module.exports = {
   validateUpdateUserProfile,
   validateUpdateUserRole,
   validateVerifyUser,
-  validateFindUserByEmail,
+  validateFindUserByEmailOrPhone,
 };

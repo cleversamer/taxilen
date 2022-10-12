@@ -2,18 +2,36 @@ const { Schema, model } = require("mongoose");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
-const CLIENT_SCHEMA = ["_id", "name", "email", "role", "verified"];
+const CLIENT_SCHEMA = [
+  "_id",
+  "avatarURL",
+  "name",
+  "email",
+  "phone",
+  "role",
+  "verified",
+];
 
-const SUPPORTED_ROLES = ["user", "admin"];
+const SUPPORTED_ROLES = ["user", "office", "admin"];
 
 const userSchema = new Schema(
   {
+    avatarURL: {
+      type: String,
+      default: "",
+    },
     name: {
       type: String,
       trim: true,
       required: true,
     },
     email: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    phone: {
       type: String,
       required: true,
       unique: true,
@@ -34,8 +52,22 @@ const userSchema = new Schema(
         type: Boolean,
         default: false,
       },
+      phone: {
+        type: Boolean,
+        default: false,
+      },
     },
     emailVerificationCode: {
+      code: {
+        type: String,
+        default: "",
+      },
+      expiresAt: {
+        type: String,
+        default: "",
+      },
+    },
+    phoneVerificationCode: {
       code: {
         type: String,
         default: "",
@@ -68,6 +100,12 @@ userSchema.methods.updateEmailVerificationCode = function () {
   this.emailVerificationCode = { code, expiresAt };
 };
 
+userSchema.methods.updatePhoneVerificationCode = function () {
+  const code = Math.floor(1000 + Math.random() * 9000);
+  const expiresAt = new Date() + 10 * 60 * 1000;
+  this.phoneVerificationCode = { code, expiresAt };
+};
+
 userSchema.methods.generatePasswordResetCode = function () {
   const code = Math.floor(1000 + Math.random() * 9000);
   const expiresAt = new Date() + 10 * 60 * 1000;
@@ -76,6 +114,10 @@ userSchema.methods.generatePasswordResetCode = function () {
 
 userSchema.methods.verifyEmail = function () {
   this.verified.email = true;
+};
+
+userSchema.methods.verifyPhone = function () {
+  this.verified.phone = true;
 };
 
 userSchema.methods.genAuthToken = function () {

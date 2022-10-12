@@ -15,9 +15,9 @@ const verify = (req, res, resolve, reject, rights) => async (err, user) => {
 
   const requireNoVerified = rights[2];
 
-  if (!requireNoVerified && !user.verified.email) {
+  if (!requireNoVerified && !user.verified.phone) {
     const statusCode = httpStatus.FORBIDDEN;
-    const message = errors.auth.emailNotVerified;
+    const message = errors.auth.phoneNotVerified;
     return reject(new ApiError(statusCode, message));
   }
 

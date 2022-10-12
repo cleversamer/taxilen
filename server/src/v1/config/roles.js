@@ -11,6 +11,7 @@ let grantsObject = {
   admin: {
     user: allRights,
     emailVerificationCode: allRights,
+    phoneVerificationCode: allRights,
     password: allRights,
   },
   user: {
@@ -19,6 +20,10 @@ let grantsObject = {
       "update:own": ["*"],
     },
     emailVerificationCode: {
+      "read:own": ["*"],
+      "update:own": ["*"],
+    },
+    phoneVerificationCode: {
       "read:own": ["*"],
       "update:own": ["*"],
     },

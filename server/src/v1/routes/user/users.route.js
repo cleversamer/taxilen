@@ -6,7 +6,7 @@ const auth = require("../../middleware/auth");
 router.get("/isauth", [auth("readOwn", "user", true)], usersController.isAuth);
 
 router
-  .route("/verify")
+  .route("/verify-email")
   .get(
     [auth("readOwn", "emailVerificationCode", true)],
     usersController.resendEmailVerificationCode
@@ -17,8 +17,22 @@ router
   );
 
 router
+  .route("/verify-phone")
+  .get(
+    [auth("readOwn", "phoneVerificationCode", true)],
+    usersController.resendPhoneVerificationCode
+  )
+  .post(
+    [auth("updateOwn", "phoneVerificationCode", true)],
+    usersController.verifyUserPhone
+  );
+
+router
   .route("/forgot-password")
-  .get([authValidator.emailValidator], usersController.sendForgotPasswordCode)
+  .get(
+    [authValidator.getForgotPasswordCode],
+    usersController.sendForgotPasswordCode
+  )
   .post(
     [authValidator.forgotPasswordValidator],
     usersController.handleForgotPassword
@@ -49,15 +63,15 @@ router.patch(
 );
 
 router.patch(
-  "/admin/validate-user",
+  "/admin/verify-user",
   [auth("updateAny", "user"), userValidator.validateVerifyUser],
-  usersController.validateUser
+  usersController.verifyUser
 );
 
 router.get(
   "/:role/:id",
-  [auth("readAny", "user"), userValidator.validateFindUserByEmail],
-  usersController.findUserByEmail
+  [auth("readAny", "user"), userValidator.validateFindUserByEmailOrPhone],
+  usersController.findUserByEmailOrPhone
 );
 
 module.exports = router;

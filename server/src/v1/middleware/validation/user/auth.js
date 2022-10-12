@@ -3,7 +3,11 @@ const errors = require("../../../config/errors");
 const commonMiddleware = require("../common");
 
 const loginValidator = [
-  check("email").trim().isEmail().withMessage(errors.auth.invalidEmail).bail(),
+  check("emailOrPhone")
+    .trim()
+    .isLength({ min: 8, max: 256 })
+    .withMessage(errors.auth.invalidEmailOrPhone)
+    .bail(),
 
   check("password")
     .trim()
@@ -20,6 +24,8 @@ const registerValidator = [
     .withMessage(errors.auth.invalidName),
 
   check("email").trim().isEmail().withMessage(errors.auth.invalidEmail).bail(),
+
+  commonMiddleware.checkPhone,
 
   check("password")
     .trim()
@@ -39,7 +45,11 @@ const resetPasswordValidator = [
 ];
 
 const forgotPasswordValidator = [
-  check("email").trim().isEmail().withMessage(errors.auth.invalidEmail).bail(),
+  check("emailOrPhone")
+    .trim()
+    .isLength({ min: 8, max: 256 })
+    .withMessage(errors.auth.invalidEmailOrPhone)
+    .bail(),
 
   check("newPassword")
     .trim()
@@ -47,6 +57,20 @@ const forgotPasswordValidator = [
     .withMessage(errors.auth.invalidPassword),
 
   commonMiddleware.next,
+];
+
+const getForgotPasswordCode = [
+  (req, res, next) => {
+    req.body.emailOrPhone = req.query.emailOrPhone;
+
+    next();
+  },
+
+  check("emailOrPhone")
+    .trim()
+    .isLength({ min: 8, max: 256 })
+    .withMessage(errors.auth.invalidEmailOrPhone)
+    .bail(),
 ];
 
 const emailValidator = [
@@ -61,4 +85,5 @@ module.exports = {
   resetPasswordValidator,
   forgotPasswordValidator,
   emailValidator,
+  getForgotPasswordCode,
 };

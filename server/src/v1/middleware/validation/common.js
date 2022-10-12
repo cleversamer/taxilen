@@ -17,6 +17,33 @@ const next = (req, res, next) => {
   next();
 };
 
+const checkPhone = (req, res, next) => {
+  let { phone } = req.body;
+
+  // Convert phone to string if it's not a string.
+  if (typeof phone !== "string") {
+    phone = String(phone);
+  }
+
+  // Check phone length (should = 10).
+  if (phone.length !== 10) {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidPhone;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  // Check if it starts with 059 or 056
+  if (!phone.startsWith("059") && !phone.startsWith("056")) {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidPhone;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  next();
+};
+
 const checkMongoIdQueryParam = (req, res, next) => {
   const emptyQueryParams = !Object.keys(req.query).length;
   if (emptyQueryParams) {
@@ -72,7 +99,7 @@ const checkFile =
 
     if (compulsory && (!req.files || !req.files[key])) {
       const statusCode = httpStatus.BAD_REQUEST;
-      const message = errors.system.noFile;
+      const message = errors.system.noPhoto;
       const err = new ApiError(statusCode, message);
       return next(err);
     }
@@ -90,6 +117,7 @@ const checkFile =
 
 module.exports = {
   next,
+  checkPhone,
   checkMongoIdQueryParam,
   conditionalCheck,
   checkFile,
