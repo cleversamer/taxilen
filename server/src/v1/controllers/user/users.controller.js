@@ -101,6 +101,7 @@ module.exports.verifyUserPhone = async (req, res, next) => {
 
 module.exports.resendEmailVerificationCode = async (req, res, next) => {
   try {
+    const { lang = "ar" } = req.query;
     const user = req.user;
 
     if (user.verified.email) {
@@ -112,7 +113,7 @@ module.exports.resendEmailVerificationCode = async (req, res, next) => {
     user.updateEmailVerificationCode();
     await user.save();
 
-    await emailService.registerEmail(user.email, user);
+    await emailService.registerEmail(lang, user.email, user);
 
     res
       .status(httpStatus.OK)
@@ -124,6 +125,7 @@ module.exports.resendEmailVerificationCode = async (req, res, next) => {
 
 module.exports.resendPhoneVerificationCode = async (req, res, next) => {
   try {
+    const { lang = "ar" } = req.query;
     const user = req.user;
 
     if (user.verified.phone) {
@@ -163,7 +165,7 @@ module.exports.resetPassword = async (req, res, next) => {
 
 module.exports.sendForgotPasswordCode = async (req, res, next) => {
   try {
-    const { emailOrPhone, sendTo } = req.query;
+    const { emailOrPhone, sendTo, lang = "ar" } = req.query;
     const user = await usersService.findUserByEmailOrPhone(emailOrPhone);
 
     if (!user) {
@@ -178,7 +180,7 @@ module.exports.sendForgotPasswordCode = async (req, res, next) => {
     if (sendTo === "phone") {
       // TODO: send forgot password code to user's phone.
     } else {
-      await emailService.forgotPasswordEmail(user.email, updatedUser);
+      await emailService.forgotPasswordEmail(lang, user.email, updatedUser);
     }
 
     const body = {
@@ -240,16 +242,18 @@ module.exports.handleForgotPassword = async (req, res, next) => {
 module.exports.updateProfile = async (req, res, next) => {
   try {
     const user = req.user;
-    const { name, email, phone, password } = req.body;
+    const { name, email, phone, address, password, lang = "ar" } = req.body;
     const avatar = req?.files?.avatar || null;
 
     const newUser = await usersService.updateProfile(
+      lang,
       user,
       name,
       email,
       password,
       phone,
-      avatar
+      avatar,
+      address
     );
 
     const body = {
@@ -266,15 +270,24 @@ module.exports.updateProfile = async (req, res, next) => {
 ///////////////////////////// ADMIN /////////////////////////////
 module.exports.updateUserProfile = async (req, res, next) => {
   try {
-    const { emailOrPhone, name, email, password } = req.body;
+    const {
+      lang = "ar",
+      emailOrPhone,
+      name,
+      email,
+      address,
+      password,
+    } = req.body;
     const avatar = req?.files?.avatar || null;
 
     const updatedUser = await usersService.updateUserProfile(
+      lang,
       emailOrPhone,
       name,
       email,
       password,
-      avatar
+      avatar,
+      address
     );
 
     res.status(httpStatus.CREATED).json(_.pick(updatedUser, CLIENT_SCHEMA));

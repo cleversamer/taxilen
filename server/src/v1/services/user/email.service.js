@@ -1,5 +1,4 @@
 const nodemailer = require("nodemailer");
-const Mailgen = require("mailgen");
 const mail = require("../../config/mail");
 
 const transporter = nodemailer.createTransport({
@@ -11,37 +10,27 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-module.exports.registerEmail = async (email, user) => {
+module.exports.registerEmail = async (lang, email, user) => {
   try {
-    const mailGenerator = new Mailgen({
-      theme: "default",
-      product: {
-        name: "منصة بيان التعليمية",
-        link: "#",
-        copyright: "حقوق النسخ © 2022 منصة بيان التعليمية. حميع الحقوق محفوظة.",
-      },
-    });
+    if (!["ar", "en"].includes(lang)) {
+      lang = "ar";
+    }
 
-    const emailBody = mailGenerator.generate({
-      body: {
-        title: `<br />
-        <center text-align="right">
-          هذا هو الكود الخاص بتفعيل بريدك الإلكتروني صالح لمدة 10 دقائق:
-          <br /> 
-          ${user.emailVerificationCode.code}
-          </center>
-         <br />`,
-        greeting: "Dear",
-        signature: user.name || "مستخدم منصة بيان",
-      },
-    });
+    const {
+      subject,
+      emailBody: { title, greeting },
+    } = mail.types.register;
 
-    const message = {
-      to: email,
-      from: "منصة بيان التعليمية",
-      html: emailBody,
-      subject: "أهلاً بك في منصة بيان التعليمية",
-    };
+    const mailGenerator = mail.getMailGenerator(lang);
+
+    const emailBody = mail.getEmailBody(
+      mailGenerator,
+      title[lang](user),
+      greeting[lang],
+      user
+    );
+
+    const message = mail.getMessage(email, emailBody, subject[lang]);
 
     await transporter.sendMail(message);
     return true;
@@ -50,37 +39,56 @@ module.exports.registerEmail = async (email, user) => {
   }
 };
 
-module.exports.forgotPasswordEmail = async (email, user) => {
+module.exports.changeEmail = async (lang, email, user) => {
   try {
-    const mailGenerator = new Mailgen({
-      theme: "default",
-      product: {
-        name: "منصة بيان التعليمية",
-        link: "#",
-        copyright: "حقوق النسخ © 2022 منصة بيان التعليمية. حميع الحقوق محفوظة.",
-      },
-    });
+    if (!["ar", "en"].includes(lang)) {
+      lang = "ar";
+    }
 
-    const emailBody = mailGenerator.generate({
-      body: {
-        title: `<br />
-        <center text-align="right">
-          هذا هو الكود الخاص باستعادة كلمة المرور صالح لمدة 10 دقائق:
-          <br /> 
-          ${user.resetPasswordCode.code}
-          </center>
-         <br />`,
-        greeting: "Dear",
-        signature: user.name || "مستخدم منصة بيان",
-      },
-    });
+    const {
+      subject,
+      emailBody: { title, greeting },
+    } = mail.types.changeEmail;
 
-    const message = {
-      to: email,
-      from: "منصة بيان التعليمية",
-      html: emailBody,
-      subject: "إعادة تعيين كلمة المرور",
-    };
+    const mailGenerator = mail.getMailGenerator(lang);
+
+    const emailBody = mail.getEmailBody(
+      mailGenerator,
+      title[lang](user),
+      greeting[lang],
+      user
+    );
+
+    const message = mail.getMessage(email, emailBody, subject[lang]);
+
+    await transporter.sendMail(message);
+    return true;
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports.forgotPasswordEmail = async (lang, email, user) => {
+  try {
+    if (!["ar", "en"].includes(lang)) {
+      lang = "ar";
+    }
+
+    const {
+      subject,
+      emailBody: { title, greeting },
+    } = mail.types.forgotPassword;
+
+    const mailGenerator = mail.getMailGenerator(lang);
+
+    const emailBody = mail.getEmailBody(
+      mailGenerator,
+      title[lang](user),
+      greeting[lang],
+      user
+    );
+
+    const message = mail.getMessage(email, emailBody, subject[lang]);
 
     await transporter.sendMail(message);
     return true;

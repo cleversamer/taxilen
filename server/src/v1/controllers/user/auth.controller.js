@@ -1,4 +1,4 @@
-const { authService } = require("../../services");
+const { authService, emailService } = require("../../services");
 const httpStatus = require("http-status");
 const { ApiError } = require("../../middleware/apiError");
 const { CLIENT_SCHEMA } = require("../../models/user.model");
@@ -7,8 +7,17 @@ const _ = require("lodash");
 
 module.exports.register = async (req, res, next) => {
   try {
-    const { name, email, phone, password } = req.body;
-    const user = await authService.register(email, password, name, phone);
+    const { lang = "ar", name, email, phone, address, password } = req.body;
+
+    const user = await authService.register(
+      email,
+      password,
+      name,
+      phone,
+      address
+    );
+
+    await emailService.registerEmail(lang, email, user);
 
     // TODO: send phone activation code to user's phone.
 

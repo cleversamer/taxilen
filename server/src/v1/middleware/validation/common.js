@@ -17,6 +17,87 @@ const next = (req, res, next) => {
   next();
 };
 
+const checkAddress = (req, res, next) => {
+  const { address } = req.body;
+
+  // Check address type
+  if (typeof address !== "object") {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidAddress;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  // Trim all strings inside address obj
+  for (let key in address) {
+    if (typeof address[key] === "string") {
+      address[key] = address[key].trim();
+    }
+  }
+
+  // Check city
+  if (!address.city || typeof address.city !== "string") {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidCity;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  if (address.city.length < 3 || address.city.length > 32) {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidCity;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  // Check line1
+  if (!address.line1 || typeof address.line1 !== "string") {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidLine1;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  if (address.line1.length < 5 || address.line1.length > 128) {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidLine1;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  // Check line2
+  if (!address.line2 || typeof address.line2 !== "string") {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidLine2;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  if (address.line2.length < 5 || address.line2.length > 128) {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidLine2;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  // Check street
+  if (!address.street || typeof address.street !== "string") {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidStreet;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  if (address.street.length < 5 || address.street.length > 128) {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidStreet;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  next();
+};
+
 const checkPhone = (req, res, next) => {
   let { phone } = req.body;
 
@@ -117,6 +198,7 @@ const checkFile =
 
 module.exports = {
   next,
+  checkAddress,
   checkPhone,
   checkMongoIdQueryParam,
   conditionalCheck,

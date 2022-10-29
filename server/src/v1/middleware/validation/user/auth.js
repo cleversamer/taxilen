@@ -27,6 +27,8 @@ const registerValidator = [
 
   commonMiddleware.checkPhone,
 
+  commonMiddleware.checkAddress,
+
   check("password")
     .trim()
     .isLength({ min: 8, max: 32 })

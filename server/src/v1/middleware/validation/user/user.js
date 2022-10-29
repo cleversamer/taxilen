@@ -21,6 +21,8 @@ const validateUpdateProfile = [
 
   commonMiddleware.conditionalCheck("phone", commonMiddleware.checkPhone),
 
+  commonMiddleware.conditionalCheck("address", commonMiddleware.checkAddress),
+
   commonMiddleware.conditionalCheck(
     "password",
     check("password")

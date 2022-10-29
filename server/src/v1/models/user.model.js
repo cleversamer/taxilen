@@ -8,6 +8,7 @@ const CLIENT_SCHEMA = [
   "name",
   "email",
   "phone",
+  "address",
   "role",
   "verified",
 ];
@@ -36,6 +37,24 @@ const userSchema = new Schema(
       required: true,
       unique: true,
       trim: true,
+    },
+    address: {
+      city: {
+        type: String,
+        default: "",
+      },
+      line1: {
+        type: String,
+        default: "",
+      },
+      line2: {
+        type: String,
+        default: "",
+      },
+      street: {
+        type: String,
+        default: "",
+      },
     },
     password: {
       type: String,

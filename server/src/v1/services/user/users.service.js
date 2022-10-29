@@ -13,8 +13,6 @@ module.exports.findUserByEmailOrPhone = async (
   withError = false
 ) => {
   try {
-    console.log(emailOrPhone, role, withError);
-
     const user = await User.findOne({
       $or: [{ email: { $eq: emailOrPhone } }, { phone: { $eq: emailOrPhone } }],
     });
@@ -54,12 +52,14 @@ module.exports.validateToken = (token) => {
 };
 
 module.exports.updateProfile = async (
+  lang,
   user,
   name,
   email,
   password,
   phone,
-  avatar
+  avatar,
+  address
 ) => {
   try {
     let userChanged = false;
@@ -82,6 +82,11 @@ module.exports.updateProfile = async (
       userChanged = true;
     }
 
+    if (address) {
+      user.address = address;
+      userChanged = true;
+    }
+
     if (email && user.email !== email) {
       const emailUsed = await this.findUserByEmailOrPhone(email);
       if (emailUsed) {
@@ -94,7 +99,7 @@ module.exports.updateProfile = async (
       user.verified.email = false;
       userChanged = true;
       user.updateEmailVerificationCode();
-      await emailService.registerEmail(email, user);
+      await emailService.changeEmail(lang, email, user);
     }
 
     if (phone && user.phone !== phone) {
@@ -161,11 +166,13 @@ module.exports.verifyUser = async (emailOrPhone) => {
 };
 
 module.exports.updateUserProfile = async (
+  lang,
   emailOrPhone,
   name,
   email,
   password,
-  avatar
+  avatar,
+  address
 ) => {
   try {
     let userChanged = false;
@@ -179,6 +186,11 @@ module.exports.updateUserProfile = async (
 
     if (name && user.name !== name) {
       user.name = name;
+      userChanged = true;
+    }
+
+    if (address) {
+      user.address = address;
       userChanged = true;
     }
 
@@ -207,7 +219,7 @@ module.exports.updateUserProfile = async (
       user.verified.email = false;
       userChanged = true;
       user.updateEmailVerificationCode();
-      await emailService.registerEmail(email, user);
+      await emailService.changeEmail(lang, email, user);
     }
 
     return userChanged ? await user.save() : user;

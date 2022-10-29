@@ -5,7 +5,7 @@ const httpStatus = require("http-status");
 const errors = require("../../config/errors");
 const usersService = require("./users.service");
 
-module.exports.register = async (email, password, name, phone) => {
+module.exports.register = async (email, password, name, phone, address) => {
   try {
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(password, salt);
@@ -15,8 +15,10 @@ module.exports.register = async (email, password, name, phone) => {
       email,
       password: hashed,
       phone,
+      address,
     });
 
+    user.updateEmailVerificationCode();
     user.updatePhoneVerificationCode();
 
     return await user.save();

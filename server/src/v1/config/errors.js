@@ -102,6 +102,26 @@ const auth = Object.freeze({
     en: "Password should be (8 ~ 32 characters) length",
     ar: "كلمة المرور يجب أن تكون بين 8-32 حرفا",
   },
+  invalidAddress: {
+    en: "Invalid address",
+    ar: "العنوان غير صالح",
+  },
+  invalidCity: {
+    en: "Invalid city",
+    ar: "المدينة غير صالحة",
+  },
+  invalidLine1: {
+    en: "Invalid address line 1",
+    ar: "السطر الأول من العنوان غير صالح",
+  },
+  invalidLine2: {
+    en: "Invalid address line 2",
+    ar: "السطر الثاني من العنوان غير صالح",
+  },
+  invalidStreet: {
+    en: "Invalid address street",
+    ar: "عنوان الشارع غير صالح",
+  },
 });
 
 const user = Object.freeze({
