@@ -7,6 +7,7 @@ const usersService = require("./users.service");
 
 module.exports.register = async (email, password, name, phone, address) => {
   try {
+    // Hashing password
     const salt = await bcrypt.genSalt(10);
     const hashed = await bcrypt.hash(password, salt);
 
@@ -18,6 +19,7 @@ module.exports.register = async (email, password, name, phone, address) => {
       address,
     });
 
+    // Updating verification codes to be sent to the user
     user.updateEmailVerificationCode();
     user.updatePhoneVerificationCode();
 
@@ -31,12 +33,14 @@ module.exports.login = async (email, password) => {
   try {
     const user = await usersService.findUserByEmailOrPhone(email);
 
+    // Check if user exist
     if (!user) {
       const statusCode = httpStatus.NOT_FOUND;
       const message = errors.auth.incorrectCredentials;
       throw new ApiError(statusCode, message);
     }
 
+    // Decoding user's password and comparing it with the password argument
     if (!(await user.comparePassword(password))) {
       const statusCode = httpStatus.UNAUTHORIZED;
       const message = errors.auth.incorrectCredentials;

@@ -277,6 +277,7 @@ module.exports.updateUserProfile = async (req, res, next) => {
       email,
       address,
       password,
+      phone,
     } = req.body;
     const avatar = req?.files?.avatar || null;
 
@@ -286,6 +287,7 @@ module.exports.updateUserProfile = async (req, res, next) => {
       name,
       email,
       password,
+      phone,
       avatar,
       address
     );
