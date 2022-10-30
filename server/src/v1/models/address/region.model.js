@@ -5,13 +5,22 @@ const CLIENT_SCHEMA = ["_id", "cityId", "name"];
 const regionSchema = new Schema({
   cityId: {
     type: Types.ObjectId,
+    ref: "City",
     required: true,
   },
   name: {
-    type: String,
-    required: true,
-    trim: true,
-    unique: true,
+    en: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+    },
+    ar: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+    },
   },
 });
 

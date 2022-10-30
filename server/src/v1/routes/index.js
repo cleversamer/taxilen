@@ -1,6 +1,7 @@
 const router = require("express").Router();
 const authRoute = require("./user/auth.route");
 const usersRoute = require("./user/users.route");
+const cityRoute = require("./address/city.route");
 
 const routes = [
   {
@@ -10,6 +11,10 @@ const routes = [
   {
     path: "/users",
     route: usersRoute,
+  },
+  {
+    path: "/cities",
+    route: cityRoute,
   },
 ];
 

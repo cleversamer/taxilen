@@ -13,6 +13,27 @@ let grantsObject = {
     emailVerificationCode: allRights,
     phoneVerificationCode: allRights,
     password: allRights,
+    city: allRights,
+  },
+  office: {
+    user: {
+      "read:own": ["*"],
+      "update:own": ["*"],
+    },
+    emailVerificationCode: {
+      "read:own": ["*"],
+      "update:own": ["*"],
+    },
+    phoneVerificationCode: {
+      "read:own": ["*"],
+      "update:own": ["*"],
+    },
+    password: {
+      "update:own": ["*"],
+    },
+    city: {
+      "read:any": ["*"],
+    },
   },
   user: {
     user: {
@@ -29,6 +50,9 @@ let grantsObject = {
     },
     password: {
       "update:own": ["*"],
+    },
+    city: {
+      "read:any": ["*"],
     },
   },
 };

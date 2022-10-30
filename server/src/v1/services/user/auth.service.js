@@ -25,6 +25,12 @@ module.exports.register = async (email, password, name, phone, address) => {
 
     return await user.save();
   } catch (err) {
+    if (err.code === errors.codes.duplicateIndexKey) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.auth.emailOrPhoneUsed;
+      err = new ApiError(statusCode, message);
+    }
+
     throw err;
   }
 };

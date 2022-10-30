@@ -1,8 +1,6 @@
 const { authService, emailService } = require("../../services");
 const httpStatus = require("http-status");
-const { ApiError } = require("../../middleware/apiError");
 const { CLIENT_SCHEMA } = require("../../models/user.model");
-const errors = require("../../config/errors");
 const _ = require("lodash");
 
 module.exports.register = async (req, res, next) => {
@@ -28,12 +26,6 @@ module.exports.register = async (req, res, next) => {
 
     res.status(httpStatus.CREATED).json(body);
   } catch (err) {
-    if (err.code === errors.codes.duplicateIndexKey) {
-      const statusCode = httpStatus.BAD_REQUEST;
-      const message = errors.auth.emailOrPhoneUsed;
-      err = new ApiError(statusCode, message);
-    }
-
     next(err);
   }
 };

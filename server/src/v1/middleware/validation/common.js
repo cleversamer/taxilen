@@ -17,6 +17,88 @@ const next = (req, res, next) => {
   next();
 };
 
+const checkAddressName = (key, lang) => (req, res, next) => {
+  const name = req.body[key];
+
+  // Check `name` type
+  if (typeof name !== "string") {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.city.invalidName;
+    throw new ApiError(statusCode, message);
+  }
+
+  // Check `name` length
+  if (name.length < 3 || name.length > 128) {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.city.invalidName;
+    throw new ApiError(statusCode, message);
+  }
+
+  // Check if `name` is in english
+  const detectedLang = detectLanguage(name);
+  if (detectedLang !== lang) {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message =
+      lang === "en"
+        ? errors.city.invalidEnglishName
+        : errors.city.invalidArabicName;
+    throw new ApiError(statusCode, message);
+  }
+
+  next();
+};
+
+function detectLanguage(text) {
+  // split into words
+  const langs = text
+    .trim()
+    .split(/\s+/)
+    .map((word) => {
+      return detect(word);
+    });
+
+  // pick the lang with the most occurances
+  return (langs || []).reduce(
+    (acc, el) => {
+      acc.k[el] = acc.k[el] ? acc.k[el] + 1 : 1;
+      acc.max = acc.max ? (acc.max < acc.k[el] ? el : acc.max) : el;
+      return acc;
+    },
+    { k: {} }
+  ).max;
+
+  function detect(text) {
+    const scores = {};
+
+    const regexes = {
+      en: /[\u0000-\u007F]/gi,
+      ar: /[\u0621-\u064A\u0660-\u0669]/gi,
+    };
+
+    for (const [lang, regex] of Object.entries(regexes)) {
+      // detect occurances of lang in a word
+      let matches = text.match(regex) || [];
+      let score = matches.length / text.length;
+
+      if (score) {
+        // high percentage, return result
+        if (score > 0.85) {
+          return lang;
+        }
+        scores[lang] = score;
+      }
+    }
+
+    // not detected
+    if (Object.keys(scores).length == 0) return null;
+
+    // pick lang with highest percentage
+    return Object.keys(scores).reduce((a, b) =>
+      scores[a] > scores[b] ? a : b
+    );
+  }
+}
+
 const checkAddress = (req, res, next) => {
   const { address } = req.body;
 
@@ -35,40 +117,10 @@ const checkAddress = (req, res, next) => {
     }
   }
 
-  // Check city
-  if (!address.city || typeof address.city !== "string") {
+  // Check address title
+  if (!address.title || typeof address.title !== "string") {
     const statusCode = httpStatus.BAD_REQUEST;
-    const message = errors.auth.invalidCity;
-    const err = new ApiError(statusCode, message);
-    return next(err);
-  }
-
-  if (address.city.length < 3 || address.city.length > 32) {
-    const statusCode = httpStatus.BAD_REQUEST;
-    const message = errors.auth.invalidCity;
-    const err = new ApiError(statusCode, message);
-    return next(err);
-  }
-
-  // Check line1
-  if (!address.line1 || typeof address.line1 !== "string") {
-    const statusCode = httpStatus.BAD_REQUEST;
-    const message = errors.auth.invalidLine1;
-    const err = new ApiError(statusCode, message);
-    return next(err);
-  }
-
-  if (address.line1.length < 5 || address.line1.length > 128) {
-    const statusCode = httpStatus.BAD_REQUEST;
-    const message = errors.auth.invalidLine1;
-    const err = new ApiError(statusCode, message);
-    return next(err);
-  }
-
-  // Check line2
-  if (!address.line2 || typeof address.line2 !== "string") {
-    const statusCode = httpStatus.BAD_REQUEST;
-    const message = errors.auth.invalidLine2;
+    const message = errors.auth.invalidAddressTitle;
     const err = new ApiError(statusCode, message);
     return next(err);
   }
@@ -76,6 +128,22 @@ const checkAddress = (req, res, next) => {
   if (address.line2.length < 5 || address.line2.length > 128) {
     const statusCode = httpStatus.BAD_REQUEST;
     const message = errors.auth.invalidLine2;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  // Check city
+  if (!mongoose.isValidObjectId(address.city)) {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidCity;
+    const err = new ApiError(statusCode, message);
+    return next(err);
+  }
+
+  // Check region
+  if (!mongoose.isValidObjectId(address.region)) {
+    const statusCode = httpStatus.BAD_REQUEST;
+    const message = errors.auth.invalidRegion;
     const err = new ApiError(statusCode, message);
     return next(err);
   }
@@ -204,4 +272,5 @@ module.exports = {
   conditionalCheck,
   checkFile,
   checkMongoIdParam,
+  checkAddressName,
 };

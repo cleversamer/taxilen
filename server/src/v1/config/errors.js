@@ -110,13 +110,13 @@ const auth = Object.freeze({
     en: "Invalid city",
     ar: "المدينة غير صالحة",
   },
-  invalidLine1: {
-    en: "Invalid address line 1",
-    ar: "السطر الأول من العنوان غير صالح",
+  invalidRegion: {
+    en: "Invalid city",
+    ar: "المدينة غير صالحة",
   },
-  invalidLine2: {
-    en: "Invalid address line 2",
-    ar: "السطر الثاني من العنوان غير صالح",
+  invalidAddressTitle: {
+    en: "Invalid address title",
+    ar: "مسمى العنوان غير صالح",
   },
   invalidStreet: {
     en: "Invalid address street",
@@ -155,6 +155,33 @@ const user = Object.freeze({
   },
 });
 
+const city = Object.freeze({
+  notFound: {
+    en: "City was not found",
+    ar: "المدينة غير موجودة",
+  },
+  noCities: {
+    en: "There're no cities registered yet",
+    ar: "لا يوجد هناك مدن مسجلة بعد",
+  },
+  alreadyRegistered: {
+    en: "City is already registered",
+    ar: "المدينة مسجلة بالفعل",
+  },
+  invalidName: {
+    en: "City's name should be 3-128 characters long",
+    ar: "إسم المدينة يجب أن يكون بين 3-128 حرف",
+  },
+  invalidEnglishName: {
+    en: "English city's name is incorrect",
+    ar: "إسم المدينة الإنجليزي غير صحيح",
+  },
+  invalidArabicName: {
+    en: "Arabic city's name is incorrect",
+    ar: "إسم المدينة العربي غير صحيح",
+  },
+});
+
 const codes = Object.freeze({
   duplicateIndexKey: 11000,
 });
@@ -163,5 +190,6 @@ module.exports = {
   system,
   auth,
   user,
+  city,
   codes,
 };

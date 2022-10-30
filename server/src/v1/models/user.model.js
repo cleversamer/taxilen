@@ -1,4 +1,4 @@
-const { Schema, model } = require("mongoose");
+const { Schema, model, Types } = require("mongoose");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
@@ -38,24 +38,28 @@ const userSchema = new Schema(
       unique: true,
       trim: true,
     },
-    address: {
-      city: {
-        type: String,
-        default: "",
+    address: [
+      {
+        title: {
+          type: String,
+          required: true,
+        },
+        city: {
+          type: Types.ObjectId,
+          ref: "City",
+          required: true,
+        },
+        reqion: {
+          type: Types.ObjectId,
+          ref: "Region",
+          required: true,
+        },
+        street: {
+          type: String,
+          required: true,
+        },
       },
-      line1: {
-        type: String,
-        default: "",
-      },
-      line2: {
-        type: String,
-        default: "",
-      },
-      street: {
-        type: String,
-        default: "",
-      },
-    },
+    ],
     password: {
       type: String,
       trim: true,

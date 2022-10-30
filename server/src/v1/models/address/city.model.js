@@ -4,10 +4,18 @@ const CLIENT_SCHEMA = ["_id", "name"];
 
 const citySchema = new Schema({
   name: {
-    type: String,
-    required: true,
-    trim: true,
-    unique: true,
+    en: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+    },
+    ar: {
+      type: String,
+      required: true,
+      trim: true,
+      unique: true,
+    },
   },
 });
 
