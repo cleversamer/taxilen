@@ -74,6 +74,7 @@ module.exports.updateProfile = async (
     // Updating avarar when there's new avatar
     if (avatar && user.avatar !== avatar) {
       const file = await localStorage.storeFile(avatar);
+      await localStorage.deleteFile(user.avatarURL);
       user.avatarURL = file.path;
       userChanged = true;
     }

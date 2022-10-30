@@ -21,19 +21,15 @@ const storeFile = async (file) => {
   }
 };
 
-const deleteFile = async (file) => {
+const deleteFile = async (filePath) => {
   try {
-    if (!file || !file.name || !file.path) {
-      const statusCode = httpStatus.BAD_REQUEST;
-      const message = errors.system.invalidFile;
-      throw new ApiError(statusCode, message);
-    }
+    // if (!file || !file.name || !file.path) {
+    //   const statusCode = httpStatus.BAD_REQUEST;
+    //   const message = errors.system.invalidFile;
+    //   throw new ApiError(statusCode, message);
+    // }
 
-    fs.unlink(`./uploads${file.path}`, (err) => {
-      if (err) {
-        throw err;
-      }
-    });
+    fs.unlink(`./uploads${filePath}`, (err) => {});
 
     return true;
   } catch (err) {
