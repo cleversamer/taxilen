@@ -1,7 +1,7 @@
 const system = Object.freeze({
   internal: {
     en: "An unexpected error happened on the server",
-    ar: "حصل خطأ في السيرفر الداخلي",
+    ar: "حصل خطأ غير متوقع في الخادم",
   },
   unsupportedRoute: {
     en: "Unsupported route",
@@ -44,11 +44,11 @@ const auth = Object.freeze({
   },
   incorrectCode: {
     en: "Incorrect verification code",
-    ar: "الكود خاطئ",
+    ar: "الكود غير صحيح",
   },
   expiredCode: {
     en: "Verification code is expired",
-    ar: "الكود منتهي الصلاحية",
+    ar: "الكود منتهي الصلاحيّة",
   },
   invalidToken: {
     en: "You're unauthorized",
@@ -56,11 +56,11 @@ const auth = Object.freeze({
   },
   hasNoRights: {
     en: "You don't have enough rights",
-    ar: "ليس لديك الصلاحيات الكافية",
+    ar: "ليس لديك الصلاحيّات الكافية",
   },
   phoneNotVerified: {
     en: "You have to verify your phone to use the app",
-    ar: "يجب عليك تفعيل رقم هاتفك لتتمكن من استخدام التطبيق",
+    ar: "يجب عليك تفعيل رقم هاتفك لتتمكن من إستخدام التطبيق",
   },
   emailNotUsed: {
     en: "Email is not used",
@@ -84,7 +84,7 @@ const auth = Object.freeze({
   },
   invalidName: {
     en: "Name should be (8 ~ 64 characters) length",
-    ar: "الإسم يجب أن يكون بين 8-64 حرفا",
+    ar: "الإسم يجب أن يكون بين 8-64 حرفاً",
   },
   invalidEmail: {
     en: "Invalid email address",
@@ -100,7 +100,7 @@ const auth = Object.freeze({
   },
   invalidPassword: {
     en: "Password should be (8 ~ 32 characters) length",
-    ar: "كلمة المرور يجب أن تكون بين 8-32 حرفا",
+    ar: "كلمة المرور يجب أن تكون بين 8-32 حرفاً",
   },
   invalidAddress: {
     en: "Invalid address",
@@ -112,11 +112,11 @@ const auth = Object.freeze({
   },
   invalidRegion: {
     en: "Invalid city",
-    ar: "المدينة غير صالحة",
+    ar: "المنطقة غير صالحة",
   },
   invalidAddressTitle: {
     en: "Invalid address title",
-    ar: "مسمى العنوان غير صالح",
+    ar: "مُسمّى العنوان غير صالح",
   },
   invalidStreet: {
     en: "Invalid address street",
@@ -156,21 +156,25 @@ const user = Object.freeze({
 });
 
 const city = Object.freeze({
+  invalidId: {
+    en: "Invalid city id",
+    ar: "معرّف المدينة غير صالح",
+  },
   notFound: {
     en: "City was not found",
     ar: "المدينة غير موجودة",
   },
   noCities: {
     en: "There're no cities registered yet",
-    ar: "لا يوجد هناك مدن مسجلة بعد",
+    ar: "لا يوجد هناك مدن مسجّلة بعد",
   },
   alreadyRegistered: {
     en: "City is already registered",
-    ar: "المدينة مسجلة بالفعل",
+    ar: "المدينة مسجّلة بالفعل",
   },
   invalidName: {
-    en: "City's name should be 3-128 characters long",
-    ar: "إسم المدينة يجب أن يكون بين 3-128 حرف",
+    en: "City's name should be 3-128 characters length",
+    ar: "إسم المدينة يجب أن يكون بين 3-128 حرفاً",
   },
   invalidEnglishName: {
     en: "English city's name is incorrect",
@@ -179,6 +183,37 @@ const city = Object.freeze({
   invalidArabicName: {
     en: "Arabic city's name is incorrect",
     ar: "إسم المدينة العربي غير صحيح",
+  },
+});
+
+const region = Object.freeze({
+  invalidId: {
+    en: "Invalid region id",
+    ar: "معرّف المنطقة غير صالح",
+  },
+  notFound: {
+    en: "Region was not found",
+    ar: "المنطقة غير موجودة",
+  },
+  noRegions: {
+    en: "There're no regions registered for this city yet",
+    ar: "لا يوجد هناك مناطق مسجّلة لهذه المدينة بعد",
+  },
+  alreadyRegistered: {
+    en: "Region is already registered",
+    ar: "المنطقة مسجّلة بالفعل",
+  },
+  invalidName: {
+    en: "Regions's name should be 3-128 characters length",
+    ar: "إسم المنطقة يجب أن يكون بين 3-128 حرفاً",
+  },
+  invalidEnglishName: {
+    en: "English regions's name is incorrect",
+    ar: "إسم المنطقة الإنجليزي غير صحيح",
+  },
+  invalidArabicName: {
+    en: "Arabic regions's name is incorrect",
+    ar: "إسم المنطقة العربي غير صحيح",
   },
 });
 
@@ -191,5 +226,6 @@ module.exports = {
   auth,
   user,
   city,
+  region,
   codes,
 };

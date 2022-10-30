@@ -14,6 +14,7 @@ let grantsObject = {
     phoneVerificationCode: allRights,
     password: allRights,
     city: allRights,
+    region: allRights,
   },
   office: {
     user: {
@@ -34,6 +35,9 @@ let grantsObject = {
     city: {
       "read:any": ["*"],
     },
+    region: {
+      "read:any": ["*"],
+    },
   },
   user: {
     user: {
@@ -52,6 +56,9 @@ let grantsObject = {
       "update:own": ["*"],
     },
     city: {
+      "read:any": ["*"],
+    },
+    region: {
       "read:any": ["*"],
     },
   },

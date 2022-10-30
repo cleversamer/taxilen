@@ -17,36 +17,38 @@ const next = (req, res, next) => {
   next();
 };
 
-const checkAddressName = (key, lang) => (req, res, next) => {
-  const name = req.body[key];
+const checkAddressName =
+  (key, type = "city", lang) =>
+  (req, res, next) => {
+    const name = req.body[key];
 
-  // Check `name` type
-  if (typeof name !== "string") {
-    const statusCode = httpStatus.BAD_REQUEST;
-    const message = errors.city.invalidName;
-    throw new ApiError(statusCode, message);
-  }
+    // Check `name` type
+    if (typeof name !== "string") {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors[type].invalidName;
+      throw new ApiError(statusCode, message);
+    }
 
-  // Check `name` length
-  if (name.length < 3 || name.length > 128) {
-    const statusCode = httpStatus.BAD_REQUEST;
-    const message = errors.city.invalidName;
-    throw new ApiError(statusCode, message);
-  }
+    // Check `name` length
+    if (name.length < 3 || name.length > 128) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors[type].invalidName;
+      throw new ApiError(statusCode, message);
+    }
 
-  // Check if `name` is in english
-  const detectedLang = detectLanguage(name);
-  if (detectedLang !== lang) {
-    const statusCode = httpStatus.BAD_REQUEST;
-    const message =
-      lang === "en"
-        ? errors.city.invalidEnglishName
-        : errors.city.invalidArabicName;
-    throw new ApiError(statusCode, message);
-  }
+    // Check if `name` is in english
+    const detectedLang = detectLanguage(name);
+    if (detectedLang !== lang) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message =
+        lang === "en"
+          ? errors[type].invalidEnglishName
+          : errors[type].invalidArabicName;
+      throw new ApiError(statusCode, message);
+    }
 
-  next();
-};
+    next();
+  };
 
 function detectLanguage(text) {
   // split into words

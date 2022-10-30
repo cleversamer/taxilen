@@ -1,6 +1,6 @@
 const { Schema, model, Types } = require("mongoose");
 
-const CLIENT_SCHEMA = ["_id", "cityId", "name"];
+const CLIENT_SCHEMA = ["_id", "name"];
 
 const regionSchema = new Schema({
   cityId: {

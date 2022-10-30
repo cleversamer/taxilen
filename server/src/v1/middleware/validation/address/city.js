@@ -3,27 +3,27 @@ const errors = require("../../../config/errors");
 const commonMiddleware = require("../common");
 
 const validateCreateCity = [
-  commonMiddleware.checkAddressName("enName", "en"),
-  commonMiddleware.checkAddressName("arName", "ar"),
+  commonMiddleware.checkAddressName("enName", "city", "en"),
+  commonMiddleware.checkAddressName("arName", "city", "ar"),
   commonMiddleware.next,
 ];
 
 const validateUpdateCity = [
   commonMiddleware.conditionalCheck(
     "enName",
-    commonMiddleware.checkAddressName("enName", "en")
+    commonMiddleware.checkAddressName("enName", "city", "en")
   ),
 
   commonMiddleware.conditionalCheck(
     "arName",
-    commonMiddleware.checkAddressName("arName", "ar")
+    commonMiddleware.checkAddressName("arName", "city", "ar")
   ),
 
   commonMiddleware.next,
 ];
 
 const validateDeleteCity = [
-  check("cityId").isMongoId().withMessage(errors.system.invalidMongoId),
+  check("cityId").isMongoId().withMessage(errors.city.invalidId),
   commonMiddleware.next,
 ];
 

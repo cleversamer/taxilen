@@ -1,9 +1,16 @@
-const { City } = require("../../models/address/city.model");
+const { City, CLIENT_SCHEMA } = require("../../models/address/city.model");
 const httpStatus = require("http-status");
 const errors = require("../../config/errors");
 const { ApiError } = require("../../middleware/apiError");
-const { CLIENT_SCHEMA } = require("../../models/address/city.model");
 const _ = require("lodash");
+
+module.exports.findCityById = async (cityId) => {
+  try {
+    return await City.findById(cityId);
+  } catch (err) {
+    throw err;
+  }
+};
 
 module.exports.createCity = async (enName, arName) => {
   try {
