@@ -14,47 +14,49 @@ One place for all taxi service providers.
 
 - Server:
 
-  - AccessControl
-  - Bcrypt
-  - Cors
-  - DotEnv
-  - Express
-  - Express Mongo Sanitize
-  - Express Validator
-  - HTTP Status
-  - JsonWebToken
-  - Lodash
-  - MailGen
-  - Mongoose
-  - NodeMailer
-  - Passport
-  - Passport JWT
-  - XSS Clean
+  - accesscontrol
+  - bcrypt
+  - cors
+  - dotenv
+  - express
+  - express-fileupload
+  - express-mongo-sanitize
+  - express-rate-limit
+  - express-validator
+  - http-status
+  - jsonwebtoken
+  - lodash
+  - mailgen
+  - mongoose
+  - nodemailer
+  - passport
+  - passport-jwt
+  - xss-clean
 
 - Client:
-  - React
-  - React DOM
-  - React Router DOM
-  - React Scripts
-  - Styled Components
+  - react
+  - react-dom
+  - react-router-dom
+  - react-scripts
+  - styled-components
 
 ### Installing
 
 - Server:
 
-  - Write on the termianl `cd ~ && cd server && npm install`
+  - Write on the termianl `cd server && npm install`
 
 - Client:
-  - Write on the termianl `cd ~ && cd client && npm install`
+  - Write on the termianl `cd client && npm install`
 
 ### Executing Program
 
 - Server:
 
-  - Write on the termianl `cd ~ && cd server && npm start`
+  - Write on the termianl `cd server && npm start`
 
 - Client:
-  - Write on the termianl `cd ~ && cd client && npm start`
+  - Write on the termianl `cd client && npm start`
 
 ## Help
 
