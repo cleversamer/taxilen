@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
-const { validationResult } = require("express-validator");
+const { SUPPORTED_ROLES } = require("../../models/user/user.model");
+const { check, validationResult } = require("express-validator");
 const httpStatus = require("http-status");
 const { ApiError } = require("../apiError");
 const errors = require("../../config/errors");
@@ -16,6 +17,63 @@ const next = (req, res, next) => {
 
   next();
 };
+
+const checkEmailOrPhone = [
+  (req, res, next) => {
+    req.body.emailOrPhone = req.body?.emailOrPhone?.toLowerCase();
+    next();
+  },
+
+  check("emailOrPhone")
+    .isLength({ min: 8, max: 256 })
+    .withMessage(errors.auth.invalidEmailOrPhone)
+    .bail(),
+];
+
+const checkEmail = [
+  (req, res, next) => {
+    req.body.email = req.body?.email?.toLowerCase();
+    next();
+  },
+
+  check("email").isEmail().withMessage(errors.auth.invalidEmail).bail(),
+
+  next,
+];
+
+const checkPassword = check("password")
+  .isLength({ min: 8, max: 32 })
+  .withMessage(errors.auth.invalidPassword);
+
+const checkOldPassword = check("oldPassword")
+  .isLength({ min: 8, max: 32 })
+  .withMessage(errors.auth.invalidPassword);
+
+const checkNewPassword = check("newPassword")
+  .isLength({ min: 8, max: 32 })
+  .withMessage(errors.auth.invalidPassword);
+
+const checkCode = check("code")
+  .isLength({ min: 4, max: 4 })
+  .isNumeric()
+  .withMessage(errors.auth.invalidCode);
+
+const checkLanguage = check("lang")
+  .notEmpty()
+  .withMessage(errors.user.noLanguage)
+  .isIn(["en", "ar"])
+  .withMessage(errors.user.unsupportedLanguage);
+
+const checkName = check("name")
+  .isLength({ min: 8, max: 64 })
+  .withMessage(errors.auth.invalidName);
+
+const checkRole = (exceptAdmin = false) =>
+  exceptAdmin
+    ? check("role")
+        .isIn(SUPPORTED_ROLES.filter((role) => role !== "admin"))
+        .withMessage(errors.user.invalidRole)
+    : check("role").isIn(SUPPORTED_ROLES).withMessage(errors.user.invalidRole);
 
 const checkAddressName =
   (key, type = "city", lang) =>
@@ -52,12 +110,9 @@ const checkAddressName =
 
 function detectLanguage(text) {
   // split into words
-  const langs = text
-    .trim()
-    .split(/\s+/)
-    .map((word) => {
-      return detect(word);
-    });
+  const langs = text.split(/\s+/).map((word) => {
+    return detect(word);
+  });
 
   // pick the lang with the most occurances
   return (langs || []).reduce(
@@ -115,7 +170,7 @@ const checkAddress = (req, res, next) => {
   // Trim all strings inside address obj
   for (let key in address) {
     if (typeof address[key] === "string") {
-      address[key] = address[key].trim();
+      address[key] = address[key];
     }
   }
 
@@ -127,15 +182,15 @@ const checkAddress = (req, res, next) => {
     return next(err);
   }
 
-  if (address.line2.length < 5 || address.line2.length > 128) {
+  if (address.title.length < 5 || address.title.length > 128) {
     const statusCode = httpStatus.BAD_REQUEST;
-    const message = errors.auth.invalidLine2;
+    const message = errors.auth.invalidAddressTitle;
     const err = new ApiError(statusCode, message);
     return next(err);
   }
 
   // Check city
-  if (!mongoose.isValidObjectId(address.city)) {
+  if (!mongoose.isValidObjectId(address.cityId)) {
     const statusCode = httpStatus.BAD_REQUEST;
     const message = errors.auth.invalidCity;
     const err = new ApiError(statusCode, message);
@@ -143,7 +198,7 @@ const checkAddress = (req, res, next) => {
   }
 
   // Check region
-  if (!mongoose.isValidObjectId(address.region)) {
+  if (!mongoose.isValidObjectId(address.regionId)) {
     const statusCode = httpStatus.BAD_REQUEST;
     const message = errors.auth.invalidRegion;
     const err = new ApiError(statusCode, message);
@@ -275,4 +330,13 @@ module.exports = {
   checkFile,
   checkMongoIdParam,
   checkAddressName,
+  checkEmailOrPhone,
+  checkEmail,
+  checkPassword,
+  checkOldPassword,
+  checkNewPassword,
+  checkCode,
+  checkLanguage,
+  checkName,
+  checkRole,
 };

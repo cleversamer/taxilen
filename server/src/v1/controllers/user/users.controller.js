@@ -1,163 +1,63 @@
 const httpStatus = require("http-status");
-const bcrypt = require("bcrypt");
 const _ = require("lodash");
-const { CLIENT_SCHEMA } = require("../../models/user.model");
-const { emailService, usersService } = require("../../services");
-const { ApiError } = require("../../middleware/apiError");
-const errors = require("../../config/errors");
+const { CLIENT_SCHEMA } = require("../../models/user/user.model");
+const { usersService } = require("../../services");
 const success = require("../../config/success");
 
 module.exports.isAuth = async (req, res, next) => {
   try {
-    res.status(httpStatus.OK).json(_.pick(req.user, CLIENT_SCHEMA));
+    req.user.updateLastLogin();
+    const user = await req.user.save();
+
+    res.status(httpStatus.OK).json(_.pick(user, CLIENT_SCHEMA));
   } catch (err) {
     next(err);
   }
 };
 
-module.exports.verifyUserEmail = async (req, res, next) => {
+module.exports.verifyEmailOrPhone = (key) => async (req, res, next) => {
   try {
     const user = req.user;
     const { code } = req.body;
 
-    if (user.verified.email) {
-      const statusCode = httpStatus.BAD_REQUEST;
-      const message = errors.user.emailAlreadyVerified;
-      throw new ApiError(statusCode, message);
-    }
+    const verifiedUser = await usersService.verifyEmailOrPhone(key, user, code);
 
-    if ((!code && code != 0) || code.toString().length !== 4) {
-      const statusCode = httpStatus.BAD_REQUEST;
-      const message = errors.auth.invalidCode;
-      throw new ApiError(statusCode, message);
-    }
-
-    if (user.emailVerificationCode.code == code) {
-      const diff = new Date() - new Date(user.emailVerificationCode.expiresAt);
-      const activeCode = diff < 10 * 60 * 1000;
-      if (!activeCode) {
-        const statusCode = httpStatus.BAD_REQUEST;
-        const message = errors.auth.expiredCode;
-        throw new ApiError(statusCode, message);
-      }
-
-      user.verifyEmail();
-      const verifiedUser = await user.save();
-
-      return res
-        .status(httpStatus.OK)
-        .json(_.pick(verifiedUser, CLIENT_SCHEMA));
-    }
-
-    const statusCode = httpStatus.BAD_REQUEST;
-    const message = errors.auth.incorrectCode;
-    throw new ApiError(statusCode, message);
+    res.status(httpStatus.OK).json(_.pick(verifiedUser, CLIENT_SCHEMA));
   } catch (err) {
     next(err);
   }
 };
 
-module.exports.verifyUserPhone = async (req, res, next) => {
+module.exports.resendEmailOrPhoneVerificationCode =
+  (key) => async (req, res, next) => {
+    try {
+      const user = req.user;
+      const { lang } = req.query;
+
+      await usersService.resendEmailOrPhoneVerificationCode(key, user, lang);
+
+      res.status(httpStatus.OK).json({
+        ok: true,
+        message: success.auth[`${key}VerificationCodeSent`],
+      });
+    } catch (err) {
+      next(err);
+    }
+  };
+
+module.exports.changePassword = async (req, res, next) => {
   try {
     const user = req.user;
-    const { code } = req.body;
+    const { oldPassword, newPassword } = req.body;
 
-    if (user.verified.phone) {
-      const statusCode = httpStatus.BAD_REQUEST;
-      const message = errors.user.phoneAlreadyVerified;
-      throw new ApiError(statusCode, message);
-    }
+    await usersService.changePassword(user, oldPassword, newPassword);
 
-    if ((!code && code != 0) || code.toString().length !== 4) {
-      const statusCode = httpStatus.BAD_REQUEST;
-      const message = errors.auth.invalidCode;
-      throw new ApiError(statusCode, message);
-    }
+    const body = {
+      user: _.pick(user, CLIENT_SCHEMA),
+      token: user.genAuthToken(),
+    };
 
-    if (user.phoneVerificationCode.code == code) {
-      const diff = new Date() - new Date(user.phoneVerificationCode.expiresAt);
-      const activeCode = diff < 10 * 60 * 1000;
-      if (!activeCode) {
-        const statusCode = httpStatus.BAD_REQUEST;
-        const message = errors.auth.expiredCode;
-        throw new ApiError(statusCode, message);
-      }
-
-      user.verifyPhone();
-      const verifiedUser = await user.save();
-
-      return res
-        .status(httpStatus.OK)
-        .json(_.pick(verifiedUser, CLIENT_SCHEMA));
-    }
-
-    const statusCode = httpStatus.BAD_REQUEST;
-    const message = errors.auth.incorrectCode;
-    throw new ApiError(statusCode, message);
-  } catch (err) {
-    next(err);
-  }
-};
-
-module.exports.resendEmailVerificationCode = async (req, res, next) => {
-  try {
-    const { lang = "ar" } = req.query;
-    const user = req.user;
-
-    if (user.verified.email) {
-      const statusCode = httpStatus.BAD_REQUEST;
-      const message = errors.user.emailAlreadyVerified;
-      throw new ApiError(statusCode, message);
-    }
-
-    user.updateEmailVerificationCode();
-    await user.save();
-
-    await emailService.registerEmail(lang, user.email, user);
-
-    res
-      .status(httpStatus.OK)
-      .json({ ok: true, message: success.auth.emailVerificationCodeSent });
-  } catch (err) {
-    next(err);
-  }
-};
-
-module.exports.resendPhoneVerificationCode = async (req, res, next) => {
-  try {
-    const { lang = "ar" } = req.query;
-    const user = req.user;
-
-    if (user.verified.phone) {
-      const statusCode = httpStatus.BAD_REQUEST;
-      const message = errors.user.phoneAlreadyVerified;
-      throw new ApiError(statusCode, message);
-    }
-
-    user.updatePhoneVerificationCode();
-    await user.save();
-
-    // TODO: send phone activation code to user's phone
-
-    res
-      .status(httpStatus.OK)
-      .json({ ok: true, message: success.auth.emailVerificationCodeSent });
-  } catch (err) {
-    next(err);
-  }
-};
-
-module.exports.resetPassword = async (req, res, next) => {
-  try {
-    const user = req.user;
-    const { newPassword } = req.body;
-
-    const salt = await bcrypt.genSalt(10);
-    const hashed = await bcrypt.hash(newPassword, salt);
-    user.password = hashed;
-    await user.save();
-
-    res.status(httpStatus.CREATED).json(_.pick(user, CLIENT_SCHEMA));
+    res.status(httpStatus.CREATED).json(body);
   } catch (err) {
     next(err);
   }
@@ -165,23 +65,9 @@ module.exports.resetPassword = async (req, res, next) => {
 
 module.exports.sendForgotPasswordCode = async (req, res, next) => {
   try {
-    const { emailOrPhone, sendTo, lang = "ar" } = req.query;
-    const user = await usersService.findUserByEmailOrPhone(emailOrPhone);
+    const { emailOrPhone, sendTo, lang } = req.query;
 
-    if (!user) {
-      const statusCode = httpStatus.NOT_FOUND;
-      const message = errors.auth.emailNotUsed;
-      throw new ApiError(statusCode, message);
-    }
-
-    user.generatePasswordResetCode();
-    const updatedUser = await user.save();
-
-    if (sendTo === "phone") {
-      // TODO: send forgot password code to user's phone.
-    } else {
-      await emailService.forgotPasswordEmail(lang, user.email, updatedUser);
-    }
+    await usersService.sendForgotPasswordCode(emailOrPhone, sendTo, lang);
 
     const body = {
       ok: true,
@@ -200,40 +86,14 @@ module.exports.sendForgotPasswordCode = async (req, res, next) => {
 module.exports.handleForgotPassword = async (req, res, next) => {
   try {
     const { emailOrPhone, code, newPassword } = req.body;
-    const user = await usersService.findUserByEmailOrPhone(emailOrPhone);
 
-    if (!user) {
-      const statusCode = httpStatus.NOT_FOUND;
-      const message = errors.auth.emailNotUsed;
-      throw new ApiError(statusCode, message);
-    }
+    const user = await usersService.resetPasswordWithCode(
+      emailOrPhone,
+      code,
+      newPassword
+    );
 
-    if ((!code && code != 0) || code.toString().length !== 4) {
-      const statusCode = httpStatus.BAD_REQUEST;
-      const message = errors.auth.invalidCode;
-      throw new ApiError(statusCode, message);
-    }
-
-    if (user.resetPasswordCode.code == code) {
-      const diff = new Date() - new Date(user.resetPasswordCode.expiresAt);
-      const condition = diff < 10 * 60 * 1000;
-      if (!condition) {
-        const statusCode = httpStatus.BAD_REQUEST;
-        const message = errors.auth.expiredCode;
-        throw new ApiError(statusCode, message);
-      }
-
-      const salt = await bcrypt.genSalt(10);
-      const hashed = await bcrypt.hash(newPassword, salt);
-      user.password = hashed;
-      await user.save();
-
-      return res.status(httpStatus.OK).json(_.pick(user, CLIENT_SCHEMA));
-    }
-
-    const statusCode = httpStatus.BAD_REQUEST;
-    const message = errors.auth.incorrectCode;
-    throw new ApiError(statusCode, message);
+    res.status(httpStatus.OK).json(_.pick(user, CLIENT_SCHEMA));
   } catch (err) {
     next(err);
   }
@@ -242,26 +102,51 @@ module.exports.handleForgotPassword = async (req, res, next) => {
 module.exports.updateProfile = async (req, res, next) => {
   try {
     const user = req.user;
-    const { name, email, phone, address, password, lang = "ar" } = req.body;
+    const { name, email, phone, password, lang = "ar" } = req.body;
     const avatar = req?.files?.avatar || null;
 
-    const newUser = await usersService.updateProfile(
+    const updatedUser = await usersService.updateProfile(
       lang,
       user,
       name,
       email,
       password,
       phone,
-      avatar,
-      address
+      avatar
     );
 
     const body = {
-      user: _.pick(newUser, CLIENT_SCHEMA),
-      token: newUser.genAuthToken(),
+      user: _.pick(updatedUser, CLIENT_SCHEMA),
+      token: updatedUser.genAuthToken(),
     };
 
     res.status(httpStatus.CREATED).json(body);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports.addAddress = async (req, res, next) => {
+  try {
+    const user = req.user;
+    const { address } = req.body;
+
+    const updatedUser = await usersService.addAddress(user, address);
+
+    res.status(httpStatus.CREATED).json(_.pick(updatedUser, CLIENT_SCHEMA));
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports.deleteAddress = async (req, res, next) => {
+  try {
+    const user = req.user;
+    const { addressId } = req.body;
+
+    const updatedUser = await usersService.deleteAddress(user, addressId);
+
+    res.status(httpStatus.OK).json(_.pick(updatedUser, CLIENT_SCHEMA));
   } catch (err) {
     next(err);
   }
@@ -275,7 +160,6 @@ module.exports.updateUserProfile = async (req, res, next) => {
       emailOrPhone,
       name,
       email,
-      address,
       password,
       phone,
     } = req.body;
@@ -288,8 +172,7 @@ module.exports.updateUserProfile = async (req, res, next) => {
       email,
       password,
       phone,
-      avatar,
-      address
+      avatar
     );
 
     res.status(httpStatus.CREATED).json(_.pick(updatedUser, CLIENT_SCHEMA));

@@ -70,6 +70,10 @@ const auth = Object.freeze({
     en: "Email or phone is already used",
     ar: "البريد الإلكتروني أو رقم الهاتف مستخدم مسبقاً",
   },
+  emailOrPhoneNotUsed: {
+    en: "Email or phone is not used",
+    ar: "البريد الإلكتروني أو رقم الهاتف غير مستخدم",
+  },
   emailUsed: {
     en: "Email address is already used",
     ar: "البريد الإلكتروني مستخدم مسبقاً",
@@ -81,6 +85,10 @@ const auth = Object.freeze({
   incorrectCredentials: {
     en: "Incorrect credentials",
     ar: "بيانات الدخول غير صحيحة",
+  },
+  incorrectOldPassword: {
+    en: "Incorrect old password",
+    ar: "كلمة المرور القديمة غير صحيحة",
   },
   invalidName: {
     en: "Name should be (8 ~ 64 characters) length",
@@ -108,11 +116,11 @@ const auth = Object.freeze({
   },
   invalidCity: {
     en: "Invalid city",
-    ar: "المدينة غير صالحة",
+    ar: "معرّف المدينة غير صالح",
   },
   invalidRegion: {
     en: "Invalid city",
-    ar: "المنطقة غير صالحة",
+    ar: "معرّف المنطقة غير صالح",
   },
   invalidAddressTitle: {
     en: "Invalid address title",
@@ -152,6 +160,34 @@ const user = Object.freeze({
   alreadyVerified: {
     en: "User's email and phone are already verified",
     ar: "تم التحقق من رقم هاتف وبريد المستخدم مسبقاً",
+  },
+  addressMatch: {
+    en: "Address is already added",
+    ar: "العنوان مطابق لأحد العناوين المضافة مسبقاً",
+  },
+  invalidAddressId: {
+    en: "Invalid address id",
+    ar: "معرّف العنوان غير صالح",
+  },
+  hasOnlyOneAddress: {
+    en: "You have only one address so you can't delete it",
+    ar: "لديك عنوان واحد فقط لذلك لا يمكنك حذفه",
+  },
+  addressNotFound: {
+    en: "Address is not added to your addresses",
+    ar: "العنوان غير مُضاف لعناوينك",
+  },
+  unsupportedLanguage: {
+    en: "Unsupported language",
+    ar: "اللغة غير مدعومة",
+  },
+  noLanguage: {
+    en: "Please specify your language language",
+    ar: "من فضلك قم بإختيار لغتك",
+  },
+  unsupportedReceiverType: {
+    en: "Unsupported receiver type",
+    ar: "نوع المستقبل غير مدعوم",
   },
 });
 
@@ -214,6 +250,10 @@ const region = Object.freeze({
   invalidArabicName: {
     en: "Arabic regions's name is incorrect",
     ar: "إسم المنطقة العربي غير صحيح",
+  },
+  dontBelongToCity: {
+    en: "Region doesn't belong to the selected city",
+    ar: "المنطقة لا تنتمي للمدينة المختارة",
   },
 });
 

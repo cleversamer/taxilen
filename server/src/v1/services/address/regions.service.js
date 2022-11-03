@@ -5,13 +5,21 @@ const errors = require("../../config/errors");
 const { ApiError } = require("../../middleware/apiError");
 const _ = require("lodash");
 
+module.exports.findRegionById = async (regionId) => {
+  try {
+    return await Region.findById(regionId);
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports.createRegion = async (cityId, enName, arName) => {
   try {
     // Check if city exists
     const city = await citiesService.findCityById(cityId);
     if (!city) {
       const statusCode = httpStatus.NOT_FOUND;
-      const message = errors.region.notFound;
+      const message = errors.city.notFound;
       throw new ApiError(statusCode, message);
     }
 

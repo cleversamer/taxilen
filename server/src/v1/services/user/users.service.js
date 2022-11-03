@@ -1,11 +1,12 @@
-const { User } = require("../../models/user.model");
+const { User } = require("../../models/user/user.model");
 const jwt = require("jsonwebtoken");
 const httpStatus = require("http-status");
 const emailService = require("./email.service");
 const localStorage = require("../storage/localStorage.service");
 const { ApiError } = require("../../middleware/apiError");
 const errors = require("../../config/errors");
-const bcrypt = require("bcrypt");
+const citiesService = require("../address/cities.service");
+const regionsService = require("../address/regions.service");
 
 module.exports.findUserByEmailOrPhone = async (
   emailOrPhone,
@@ -13,16 +14,21 @@ module.exports.findUserByEmailOrPhone = async (
   withError = false
 ) => {
   try {
+    // Find user by email or phone
     const user = await User.findOne({
       $or: [{ email: { $eq: emailOrPhone } }, { phone: { $eq: emailOrPhone } }],
     });
 
+    // Throwing error if no user found and `throwError = true`
     if (withError && !user) {
       const statusCode = httpStatus.NOT_FOUND;
       const message = errors.user.notFound;
       throw new ApiError(statusCode, message);
     }
 
+    // Throwing error if a user was found but the specified `role` does not match
+    // This happens in case of role is added as an argument
+    // If role is falsy that means this search does not care of role
     if (withError && user && role && user.role !== role) {
       const statusCode = httpStatus.NOT_FOUND;
       const message = errors.user.foundWithInvalidRole;
@@ -51,6 +57,168 @@ module.exports.validateToken = (token) => {
   }
 };
 
+module.exports.verifyEmailOrPhone = async (key, user, code) => {
+  try {
+    // Ensure that key is correct
+    key = key.toLowerCase();
+    if (!["email", "phone"].includes(key)) {
+      key = "email";
+    }
+
+    // Check if user's email or phone is verified
+    const isVerified =
+      key === "email" ? user.isEmailVerified() : user.isPhoneVerified();
+    if (isVerified) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.user[`${key}AlreadyVerified`];
+      throw new ApiError(statusCode, message);
+    }
+
+    // Check if code is correct
+    const isCorrectCode = user.isMatchingCode(`${key}VerificationCode`, code);
+    if (!isCorrectCode) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.auth.incorrectCode;
+      throw new ApiError(statusCode, message);
+    }
+
+    // Check if code is expired
+    const isValidCode = user.isValidCode(`${key}VerificationCode`);
+    if (!isValidCode) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.auth.expiredCode;
+      throw new ApiError(statusCode, message);
+    }
+
+    // Verify user's email or phone
+    if (key === "email") {
+      user.verifyEmail();
+    } else {
+      user.verifyPhone();
+    }
+
+    return await user.save();
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports.resendEmailOrPhoneVerificationCode = async (key, user, lang) => {
+  try {
+    // Ensure that key is correct
+    key = key.toLowerCase();
+    if (!["email", "phone"].includes(key)) {
+      key = "email";
+    }
+
+    // Check if user's email or phone is verified
+    const isVerified =
+      key === "email" ? user.isEmailVerified() : user.isPhoneVerified();
+    if (isVerified) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.user[`${key}AlreadyVerified`];
+      throw new ApiError(statusCode, message);
+    }
+
+    // Update user's email or phone verification code
+    // Send code in a message to user's email or phone
+    // Save user
+    if (key === "email") user.updateEmailVerificationCode();
+    else user.updatePhoneVerificationCode();
+    await user.save();
+
+    // Sending email or phone verification code to user's email or phone
+    if (key === "email")
+      await emailService.registerEmail(lang, user.email, user);
+
+    // TODO: send phone verification code to user's phone
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports.changePassword = async (user, oldPassword, newPassword) => {
+  try {
+    // Decoding user's password and comparing it with the old password
+    if (!(await user.comparePassword(oldPassword))) {
+      const statusCode = httpStatus.UNAUTHORIZED;
+      const message = errors.auth.incorrectOldPassword;
+      throw new ApiError(statusCode, message);
+    }
+
+    // Update password
+    await user.updatePassword(newPassword);
+
+    await user.save();
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports.sendForgotPasswordCode = async (emailOrPhone, sendTo, lang) => {
+  try {
+    // Check if user exists
+    const user = await this.findUserByEmailOrPhone(emailOrPhone);
+    if (!user) {
+      const statusCode = httpStatus.NOT_FOUND;
+      const message = errors.auth.emailOrPhoneNotUsed;
+      throw new ApiError(statusCode, message);
+    }
+
+    // Update password reset code
+    user.generatePasswordResetCode();
+    const updatedUser = await user.save();
+
+    // Send password reset code to phone or
+    if (sendTo === "phone") {
+      // TODO: send forgot password code to user's phone.
+    } else {
+      await emailService.forgotPasswordEmail(lang, user.email, updatedUser);
+    }
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports.resetPasswordWithCode = async (
+  emailOrPhone,
+  code,
+  newPassword
+) => {
+  try {
+    // Check if user exists
+    const user = await this.findUserByEmailOrPhone(emailOrPhone);
+    if (!user) {
+      const statusCode = httpStatus.NOT_FOUND;
+      const message = errors.auth.emailNotUsed;
+      throw new ApiError(statusCode, message);
+    }
+
+    // Check if code is correct
+    const isCorrectCode = user.isMatchingCode("resetPasswordCode", code);
+    if (!isCorrectCode) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.auth.incorrectCode;
+      throw new ApiError(statusCode, message);
+    }
+
+    // Check if code is expired
+    const isValidCode = user.isValidCode("resetPasswordCode");
+    if (!isValidCode) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.auth.expiredCode;
+      throw new ApiError(statusCode, message);
+    }
+
+    // Update password
+    await user.updatePassword(newPassword);
+
+    return await user.save();
+  } catch (err) {
+    throw err;
+  }
+};
+
 module.exports.updateProfile = async (
   lang,
   user,
@@ -58,85 +226,85 @@ module.exports.updateProfile = async (
   email,
   password,
   phone,
-  avatar,
-  address
+  avatar
 ) => {
   try {
-    // To update the used in case of it has been updated
-    let userChanged = false;
+    const body = {
+      lang,
+      name,
+      email,
+      password,
+      phone,
+      avatar,
+    };
 
-    // Updating name when there's new name
-    if (name && user.name !== name) {
-      user.name = name;
-      userChanged = true;
+    return await updateUserProfile(user, body);
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports.addAddress = async (user, address) => {
+  try {
+    // Check if city exists
+    const city = await citiesService.findCityById(address.cityId);
+    if (!city) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.city.notFound;
+      throw new ApiError(statusCode, message);
     }
 
-    // Updating avarar when there's new avatar
-    if (avatar && user.avatar !== avatar) {
-      const file = await localStorage.storeFile(avatar);
-      await localStorage.deleteFile(user.avatarURL);
-      user.avatarURL = file.path;
-      userChanged = true;
+    // Check if region exists
+    const region = await regionsService.findRegionById(address.regionId);
+    if (!region) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.region.notFound;
+      throw new ApiError(statusCode, message);
     }
 
-    // Updating password when there's new password
-    if (password && user.password !== password) {
-      const salt = await bcrypt.genSalt(10);
-      const hashed = await bcrypt.hash(password, salt);
-      user.password = hashed;
-      userChanged = true;
+    // Check if region belongs to city
+    if (!region.isBelongToCity(city._id)) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.region.dontBelongToCity;
+      throw new ApiError(statusCode, message);
     }
 
-    // Updating address when there's new address
-    if (address) {
-      user.address = address;
-      userChanged = true;
+    // Check if there is matching address
+    if (user.isAddressExist(address)) {
+      const statusCode = httpStatus.BAD_REQUEST;
+      const message = errors.user.addressMatch;
+      throw new ApiError(statusCode, message);
     }
 
-    // Updating email when there's new email
-    // And sending email verification code to the new email
-    if (email && user.email !== email) {
-      // Checking if email used
-      const emailUsed = await this.findUserByEmailOrPhone(email);
-      if (emailUsed) {
-        const statusCode = httpStatus.FORBIDDEN;
-        const message = errors.auth.emailUsed;
-        throw new ApiError(statusCode, message);
-      }
+    // Adding new address
+    user.addAddress(address.title, city, region, address.street);
 
-      // Updating email, setting email as not verified,
-      // update email verification code, and sending
-      // email verification code to user's email
-      user.email = email;
-      user.verified.email = false;
-      userChanged = true;
-      user.updateEmailVerificationCode();
-      await emailService.changeEmail(lang, email, user);
+    return await user.save();
+  } catch (err) {
+    throw err;
+  }
+};
+
+module.exports.deleteAddress = async (user, addressId) => {
+  try {
+    // Check if address exist
+    if (!user.getAddress(addressId)) {
+      const statusCode = httpStatus.NOT_FOUND;
+      const message = errors.user.addressNotFound;
+      throw new ApiError(statusCode, message);
     }
 
-    // Updating phone when there's new phone
-    // And sending phone verification code to the new phone
-    if (phone && user.phone !== phone) {
-      // Checking if phone used
-      const phoneUsed = await this.findUserByEmailOrPhone(phone);
-      if (phoneUsed) {
-        const statusCode = httpStatus.FORBIDDEN;
-        const message = errors.auth.phoneUsed;
-        throw new ApiError(statusCode, message);
-      }
-
-      // Updating phone, setting phone as not verified,
-      // update phone verification code, and sending
-      // phone verification code to user's phone
-      user.phone = phone;
-      user.verified.phone = false;
-      userChanged = true;
-      user.updatePhoneVerificationCode();
-
-      // TODO: send phone verification code to user's email.
+    // Check if user has only one address
+    if (user.address.length <= 1) {
+      const statusCode = httpStatus.FORBIDDEN;
+      const message = errors.user.hasOnlyOneAddress;
+      throw new ApiError(statusCode, message);
     }
 
-    return userChanged ? await user.save() : user;
+    // Delete address
+    user.deleteAddress(addressId);
+
+    return await user.save();
   } catch (err) {
     throw err;
   }
@@ -145,7 +313,7 @@ module.exports.updateProfile = async (
 ///////////////////////////// ADMIN /////////////////////////////
 module.exports.changeUserRole = async (emailOrPhone, role) => {
   try {
-    // Checking if user exists
+    // Check if user exists
     const user = await this.findUserByEmailOrPhone(emailOrPhone);
     if (!user) {
       const statusCode = httpStatus.NOT_FOUND;
@@ -155,6 +323,7 @@ module.exports.changeUserRole = async (emailOrPhone, role) => {
 
     // Update user's role
     user.role = role;
+
     return await user.save();
   } catch (err) {
     throw err;
@@ -163,7 +332,7 @@ module.exports.changeUserRole = async (emailOrPhone, role) => {
 
 module.exports.verifyUser = async (emailOrPhone) => {
   try {
-    // Checking if used exists
+    // Check if used exists
     const user = await this.findUserByEmailOrPhone(emailOrPhone);
     if (!user) {
       const statusCode = httpStatus.NOT_FOUND;
@@ -171,16 +340,17 @@ module.exports.verifyUser = async (emailOrPhone) => {
       throw new ApiError(statusCode, message);
     }
 
-    // Checking if user's email and phone are already verified
+    // Check if user's email and phone are already verified
     if (user.verified.email && user.verified.phone) {
       const statusCode = httpStatus.BAD_REQUEST;
       const message = errors.user.alreadyVerified;
       throw new ApiError(statusCode, message);
     }
 
-    // Verifiy user's email and phone
-    user.verified.email = true;
-    user.verified.phone = true;
+    // Verify user's email and phone
+    user.verifyEmail();
+    user.verifyPhone();
+
     return await user.save();
   } catch (err) {
     throw err;
@@ -194,13 +364,9 @@ module.exports.updateUserProfile = async (
   email,
   password,
   phone,
-  avatar,
-  address
+  avatar
 ) => {
   try {
-    // To update the used in case of it has been updated
-    let userChanged = false;
-
     // Checking if user exists
     const user = await this.findUserByEmailOrPhone(emailOrPhone);
     if (!user) {
@@ -209,20 +375,36 @@ module.exports.updateUserProfile = async (
       throw new ApiError(statusCode, message);
     }
 
+    const body = {
+      lang,
+      name,
+      email,
+      password,
+      phone,
+      avatar,
+    };
+
+    return await updateUserProfile(user, body);
+  } catch (err) {
+    throw err;
+  }
+};
+
+const updateUserProfile = async (user, body) => {
+  try {
+    const { name, avatar, password, email, phone, lang } = body;
+
+    // To detect updates
+    let userChanged = false;
+
     // Updating name when there's new name
     if (name && user.name !== name) {
       user.name = name;
       userChanged = true;
     }
 
-    // Updating address when there's new address
-    if (address) {
-      user.address = address;
-      userChanged = true;
-    }
-
     // Updating avatar when there's new avatar
-    if (avatar && user.avatar !== avatar) {
+    if (avatar) {
       const file = await localStorage.storeFile(avatar);
       await localStorage.deleteFile(user.avatarURL);
       user.avatarURL = file.path;
@@ -230,10 +412,8 @@ module.exports.updateUserProfile = async (
     }
 
     // Updating password when there's new password
-    if (password && user.password !== password) {
-      const salt = await bcrypt.genSalt(10);
-      const hashed = await bcrypt.hash(password, salt);
-      user.password = hashed;
+    if (password) {
+      await user.updatePassword(password);
       userChanged = true;
     }
 

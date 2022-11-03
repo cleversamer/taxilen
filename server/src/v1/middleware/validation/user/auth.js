@@ -3,80 +3,71 @@ const errors = require("../../../config/errors");
 const commonMiddleware = require("../common");
 
 const loginValidator = [
-  check("emailOrPhone")
-    .trim()
-    .isLength({ min: 8, max: 256 })
-    .withMessage(errors.auth.invalidEmailOrPhone)
-    .bail(),
-
-  check("password")
-    .trim()
-    .isLength({ min: 8, max: 32 })
-    .withMessage(errors.auth.invalidPassword),
-
+  commonMiddleware.checkEmailOrPhone,
+  commonMiddleware.checkPassword,
   commonMiddleware.next,
 ];
 
 const registerValidator = [
-  check("name")
-    .trim()
-    .isLength({ min: 8, max: 64 })
-    .withMessage(errors.auth.invalidName),
-
-  check("email").trim().isEmail().withMessage(errors.auth.invalidEmail).bail(),
-
+  commonMiddleware.checkLanguage,
+  commonMiddleware.checkName,
+  commonMiddleware.checkEmail,
   commonMiddleware.checkPhone,
-
   commonMiddleware.checkAddress,
-
-  check("password")
-    .trim()
-    .isLength({ min: 8, max: 32 })
-    .withMessage(errors.auth.invalidPassword),
-
+  commonMiddleware.checkPassword,
+  commonMiddleware.checkRole(true),
   commonMiddleware.next,
 ];
 
-const resetPasswordValidator = [
-  check("newPassword")
-    .trim()
-    .isLength({ min: 8, max: 32 })
-    .withMessage(errors.auth.invalidPassword),
-
+const changePasswordValidator = [
+  commonMiddleware.checkOldPassword,
+  commonMiddleware.checkNewPassword,
   commonMiddleware.next,
 ];
 
 const forgotPasswordValidator = [
-  check("emailOrPhone")
-    .trim()
-    .isLength({ min: 8, max: 256 })
-    .withMessage(errors.auth.invalidEmailOrPhone)
-    .bail(),
-
-  check("newPassword")
-    .trim()
-    .isLength({ min: 8, max: 32 })
-    .withMessage(errors.auth.invalidPassword),
-
+  commonMiddleware.checkEmailOrPhone,
+  commonMiddleware.checkNewPassword,
+  commonMiddleware.checkCode,
   commonMiddleware.next,
 ];
 
 const getForgotPasswordCode = [
   (req, res, next) => {
+    req.query.emailOrPhone = req.query?.emailOrPhone?.toLowerCase();
+    req.query.lang = req.query?.lang?.toLowerCase();
+    req.query.sendTo = req.query?.sendTo?.toLowerCase();
+
     req.body.emailOrPhone = req.query.emailOrPhone;
+    req.body.lang = req.query.lang;
+    req.body.sendTo = req.query.sendTo;
 
     next();
   },
 
-  check("emailOrPhone")
-    .trim()
-    .isLength({ min: 8, max: 256 })
-    .withMessage(errors.auth.invalidEmailOrPhone)
-    .bail(),
+  commonMiddleware.checkEmailOrPhone,
+
+  commonMiddleware.checkLanguage,
+
+  check("sendTo")
+    .isIn(["email", "phone"])
+    .withMessage(errors.user.unsupportedReceiverType),
+
+  commonMiddleware.next,
 ];
 
-const emailValidator = [
-  check("email").trim().isEmail().withMessage(errors.auth.invalidEmail).bail(),
+const emailValidator = [commonMiddleware.checkEmail, commonMiddleware.next];
+
+const codeValidator = [commonMiddleware.checkCode, commonMiddleware.next];
+
+const resendCodeValidator = [
+  (req, res, next) => {
+    req.body.lang = req.query.lang;
+
+    next();
+  },
+
+  commonMiddleware.checkLanguage,
 
   commonMiddleware.next,
 ];
@@ -84,8 +75,10 @@ const emailValidator = [
 module.exports = {
   loginValidator,
   registerValidator,
-  resetPasswordValidator,
+  changePasswordValidator,
   forgotPasswordValidator,
   emailValidator,
   getForgotPasswordCode,
+  codeValidator,
+  resendCodeValidator,
 };

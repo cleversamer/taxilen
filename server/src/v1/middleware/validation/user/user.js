@@ -1,68 +1,32 @@
-const { SUPPORTED_ROLES } = require("../../../models/user.model");
 const { check } = require("express-validator");
 const errors = require("../../../config/errors");
 const commonMiddleware = require("../common");
 
 const validateUpdateProfile = [
-  commonMiddleware.conditionalCheck(
-    "name",
-    check("name")
-      .trim()
-      .isLength({ min: 8, max: 64 })
-      .withMessage(errors.auth.invalidName)
-  ),
-
+  commonMiddleware.checkLanguage,
+  commonMiddleware.conditionalCheck("name", commonMiddleware.checkName),
   commonMiddleware.checkFile("avatar", ["png", "jpg", "jpeg"], false),
-
-  commonMiddleware.conditionalCheck(
-    "email",
-    check("email").trim().isEmail().withMessage(errors.auth.invalidEmail).bail()
-  ),
-
+  commonMiddleware.conditionalCheck("email", commonMiddleware.checkEmail),
   commonMiddleware.conditionalCheck("phone", commonMiddleware.checkPhone),
-
-  commonMiddleware.conditionalCheck("address", commonMiddleware.checkAddress),
-
-  commonMiddleware.conditionalCheck(
-    "password",
-    check("password")
-      .trim()
-      .isLength({ min: 8, max: 32 })
-      .withMessage(errors.auth.invalidPassword)
-  ),
-
+  commonMiddleware.conditionalCheck("password", commonMiddleware.checkPassword),
   commonMiddleware.next,
 ];
 
 const validateUpdateUserProfile = [
-  check("emailOrPhone")
-    .trim()
-    .isLength({ min: 8, max: 256 })
-    .withMessage(errors.auth.invalidEmailOrPhone)
-    .bail(),
-
+  commonMiddleware.checkEmailOrPhone,
   ...validateUpdateProfile,
 ];
 
 const validateUpdateUserRole = [
-  check("emailOrPhone")
-    .trim()
-    .isLength({ min: 8, max: 256 })
-    .withMessage(errors.auth.invalidEmailOrPhone)
-    .bail(),
+  commonMiddleware.checkEmailOrPhone,
 
-  check("role").isIn(SUPPORTED_ROLES).withMessage(errors.user.invalidRole),
+  commonMiddleware.checkRole(false),
 
   commonMiddleware.next,
 ];
 
 const validateVerifyUser = [
-  check("emailOrPhone")
-    .trim()
-    .isLength({ min: 8, max: 256 })
-    .withMessage(errors.auth.invalidEmailOrPhone)
-    .bail(),
-
+  commonMiddleware.checkEmailOrPhone,
   commonMiddleware.next,
 ];
 
@@ -74,16 +38,20 @@ const validateFindUserByEmailOrPhone = [
     next();
   },
 
-  check("emailOrPhone")
-    .trim()
-    .isLength({ min: 8, max: 256 })
-    .withMessage(errors.auth.invalidEmailOrPhone)
-    .bail(),
+  commonMiddleware.checkEmailOrPhone,
 
-  check("role")
-    .isIn(SUPPORTED_ROLES.filter((role) => role !== "admin"))
-    .withMessage(errors.user.invalidRole),
+  commonMiddleware.checkRole(true),
 
+  commonMiddleware.next,
+];
+
+const validateAddAddress = [
+  commonMiddleware.checkAddress,
+  commonMiddleware.next,
+];
+
+const validateDeleteAddress = [
+  check("addressId").isMongoId().withMessage(errors.user.invalidAddressId),
   commonMiddleware.next,
 ];
 
@@ -93,4 +61,6 @@ module.exports = {
   validateUpdateUserRole,
   validateVerifyUser,
   validateFindUserByEmailOrPhone,
+  validateAddAddress,
+  validateDeleteAddress,
 };

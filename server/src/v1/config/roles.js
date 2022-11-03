@@ -16,29 +16,7 @@ let grantsObject = {
     city: allRights,
     region: allRights,
   },
-  office: {
-    user: {
-      "read:own": ["*"],
-      "update:own": ["*"],
-    },
-    emailVerificationCode: {
-      "read:own": ["*"],
-      "update:own": ["*"],
-    },
-    phoneVerificationCode: {
-      "read:own": ["*"],
-      "update:own": ["*"],
-    },
-    password: {
-      "update:own": ["*"],
-    },
-    city: {
-      "read:any": ["*"],
-    },
-    region: {
-      "read:any": ["*"],
-    },
-  },
+
   user: {
     user: {
       "read:own": ["*"],

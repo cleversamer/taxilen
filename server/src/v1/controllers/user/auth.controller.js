@@ -1,18 +1,19 @@
 const { authService, emailService } = require("../../services");
 const httpStatus = require("http-status");
-const { CLIENT_SCHEMA } = require("../../models/user.model");
+const { CLIENT_SCHEMA } = require("../../models/user/user.model");
 const _ = require("lodash");
 
 module.exports.register = async (req, res, next) => {
   try {
-    const { lang = "ar", name, email, phone, address, password } = req.body;
+    const { lang, name, email, phone, address, password, role } = req.body;
 
     const user = await authService.register(
       email,
       password,
       name,
       phone,
-      address
+      address,
+      role
     );
 
     await emailService.registerEmail(lang, email, user);
