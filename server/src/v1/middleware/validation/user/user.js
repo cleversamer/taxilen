@@ -20,7 +20,7 @@ const validateUpdateUserProfile = [
 const validateUpdateUserRole = [
   commonMiddleware.checkEmailOrPhone,
 
-  commonMiddleware.checkRole(false),
+  commonMiddleware.checkRole(true),
 
   commonMiddleware.next,
 ];
@@ -32,8 +32,8 @@ const validateVerifyUser = [
 
 const validateFindUserByEmailOrPhone = [
   (req, res, next) => {
-    req.body.emailOrPhone = req.params.id;
-    req.body.role = req.params.role;
+    req.body.emailOrPhone = req?.params?.id?.toLowerCase();
+    req.body.role = req?.params?.role?.toLowerCase();
 
     next();
   },
